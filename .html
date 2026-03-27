@@ -1,168 +1,458 @@
 <!DOCTYPE html>
-<html lang="ru">
-
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON RUNNER - J.A.R.V.I.S. Edition</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: #000;
-            font-family: 'Sora', sans-serif;
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Neon Runner - 3D Perspective Run</title>
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Google Fonts: Sora -->
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sora: ['Sora', 'sans-serif'] },
+          colors: {
+            neonPink: '#ff2d78',
+            neonCyan: '#00f3ff',
+            neonYellow: '#fefe00',
+            darkBg: '#0a0a0c',
+          },
+          boxShadow: {
+            'neon-pink': '0 0 15px rgba(255, 45, 120, 0.6)',
+            'neon-cyan': '0 0 15px rgba(0, 243, 255, 0.4)',
+          }
         }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Sora', sans-serif;
+      background-color: #0a0a0c;
+      color: #ffffff;
+      margin: 0;
+      overflow: hidden;
+    }
+    .text-glow-pink { text-shadow: 0 0 8px #ff2d78, 0 0 12px #ff2d78; }
+    .text-glow-cyan { text-shadow: 0 0 8px #00f3ff; }
+    .hud-glass { background: rgba(10, 10, 12, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255, 45, 120, 0.3); }
+    .hud-glass-cyan { background: rgba(10, 10, 12, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(0, 243, 255, 0.3); }
+    .energy-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+    .energy-fill { height: 100%; background: #fefe00; box-shadow: 0 0 10px #fefe00; width: 75%; }
+    #game-container { position: absolute; inset: 0; z-index: 0; }
+  </style>
 
-        canvas {
-            display: block;
-        }
+  <!-- Import maps polyfill -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
 
-        .ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            color: #ff0055;
-            text-transform: uppercase;
-        }
-
-        .scanline {
-            width: 100%;
-            height: 100px;
-            z-index: 10;
-            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 0, 85, 0.1) 50%, rgba(0, 0, 0, 0) 100%);
-            opacity: 0.1;
-            position: absolute;
-            bottom: 100%;
-            animation: scan 4s linear infinite;
-        }
-
-        @keyframes scan {
-            to {
-                bottom: -100px;
-            }
-        }
-    </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
+<body class="h-screen w-full relative select-none">
 
-<body>
+  <!-- Gameplay Background/Container -->
+  <div id="game-container"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60 pointer-events-none z-10"></div>
 
-    <div class="ui-overlay p-8">
-        <div class="flex justify-between items-start">
-            <div class="text-2xl font-black tracking-widest italic">NEON_RUNNER</div>
-            <div class="text-right">
-                <div class="text-xs text-cyan-400">HIGH SCORE</div>
-                <div class="text-2xl font-bold text-white">1,240,500</div>
-            </div>
-        </div>
-
-        <div class="absolute bottom-32 left-8 border-l-4 border-cyan-400 pl-4">
-            <div class="text-xs text-cyan-400">CURRENT SPEED</div>
-            <div class="text-3xl font-bold text-white">142 <span class="text-sm">KM/H</span></div>
-        </div>
-
-        <div
-            class="absolute bottom-8 left-0 w-full flex justify-around items-center bg-black/50 py-4 backdrop-blur-md border-t border-pink-500/30">
-            <div class="text-pink-500 font-bold opacity-100">RUN</div>
-            <div class="text-white/50 font-bold">CREW</div>
-            <div class="text-white/50 font-bold">VAULT</div>
-            <div class="text-white/50 font-bold">WORLD</div>
-        </div>
-        <div class="scanline"></div>
+  <!-- Top Navigation & Logo -->
+  <header class="absolute top-0 left-0 w-full p-8 flex justify-between items-start z-20 pointer-events-none">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tighter text-neonPink text-glow-pink italic">NEON_RUNNER</h1>
     </div>
+    <div class="flex space-x-6 pointer-events-auto">
+      <button class="text-white hover:text-neonPink transition-colors">
+        <svg fill="currentColor" height="32" viewBox="0 0 256 256" width="32" xmlns="http://www.w3.org/2000/svg"><path d="M216,48V208a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8h48A8,8,0,0,1,216,48ZM96,40H48a8,8,0,0,0-8,8V208a8,8,0,0,0,8,8H96a8,8,0,0,0,8-8V48A8,8,0,0,0,96,40Z"></path></svg>
+      </button>
+      <button class="text-white hover:text-neonPink transition-colors">
+        <svg fill="currentColor" height="32" viewBox="0 0 256 256" width="32" xmlns="http://www.w3.org/2000/svg"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160ZM232,128a104,104,0,1,1-104-104A104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path></svg>
+      </button>
+    </div>
+  </header>
 
-    <script>
-        let scene, camera, renderer, platforms = [];
-        const tunnelWidth = 10;
-        const platformCount = 50;
-        let speed = 0.5;
+  <!-- Central Score HUD -->
+  <div class="absolute top-8 left-1/2 -translate-x-1/2 z-20 w-full max-w-md pointer-events-none">
+    <div class="hud-glass rounded-lg p-4 text-center border-t-2 border-neonPink shadow-neon-pink">
+      <div class="inline-block px-3 py-1 border border-neonPink rounded text-[10px] font-bold text-neonPink mb-3 tracking-widest">2X MULTIPLIER</div>
+      <div class="flex justify-between items-end gap-8">
+        <div class="text-left">
+          <p class="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">High Score</p>
+          <p class="text-xl font-bold">1,240,500</p>
+        </div>
+        <div class="text-right">
+          <p class="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Current Run</p>
+          <p id="score-display" class="text-4xl font-black text-neonPink text-glow-pink">0</p>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center gap-3">
+        <span class="text-[10px] font-bold text-neonYellow uppercase tracking-widest">Energy</span>
+        <div class="flex-grow energy-bar"><div class="energy-fill"></div></div>
+      </div>
+    </div>
+  </div>
 
-        function init() {
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.07);
+  <!-- Left Status HUD -->
+  <div class="absolute left-8 top-1/2 -translate-y-1/2 z-20 space-y-4 pointer-events-none">
+    <div class="hud-glass-cyan p-4 rounded-lg border-l-4 border-l-neonCyan w-40">
+      <p class="text-[10px] text-neonCyan font-bold uppercase tracking-widest mb-1">Current Speed</p>
+      <div class="flex items-baseline gap-1">
+        <span id="speed-display" class="text-3xl font-black text-white">0</span>
+        <span class="text-xs font-bold text-zinc-400 uppercase">km/h</span>
+      </div>
+    </div>
+    <div class="hud-glass-cyan p-4 rounded-lg border-l-4 border-l-neonPink w-40">
+      <p class="text-[10px] text-neonPink font-bold uppercase tracking-widest mb-1">Shield Status</p>
+      <span class="text-2xl font-black text-white uppercase tracking-tighter">MAX</span>
+    </div>
+  </div>
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, 5);
+  <!-- Bottom Navigation Bar -->
+  <footer class="absolute bottom-0 left-0 w-full z-30 pointer-events-auto">
+    <nav class="bg-darkBg/95 backdrop-blur-md border-t border-zinc-800 px-12 py-4 flex justify-around items-center">
+      <a class="flex flex-col items-center gap-1 group" href="#">
+        <div class="text-neonPink filter drop-shadow-[0_0_5px_#ff2d78]">
+          <svg fill="currentColor" height="28" viewBox="0 0 256 256" width="28" xmlns="http://www.w3.org/2000/svg"><path d="M239.54,92.09l-32-48a8,8,0,0,0-13.31,0l-32,48A8,8,0,0,0,168.9,104H192v80a8,8,0,0,1-16,0V112a24,24,0,0,0-24-24H128a8,8,0,0,0,0,16h24a8,8,0,0,1,8,8v72a24,24,0,0,0,48,0V104h23.1a8,8,0,0,0,6.66-11.91ZM96,64a32,32,0,1,0-32,32A32,32,0,0,0,96,64ZM48,64a16,16,0,1,1,16,16A16,16,0,0,1,48,64Zm56,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H96A8,8,0,0,1,104,192Zm24-48H32a8,8,0,0,0,0,16H128a8,8,0,0,0,0-16Z"></path></svg>
+        </div>
+        <span class="text-[10px] font-bold tracking-[0.2em] text-neonPink uppercase">Run</span>
+        <div class="h-1 w-8 bg-neonPink mt-1 rounded-full"></div>
+      </a>
+      <a class="flex flex-col items-center gap-1 group" href="#">
+        <div class="text-zinc-500 group-hover:text-white transition-colors">
+          <svg fill="currentColor" height="28" viewBox="0 0 256 256" width="28" xmlns="http://www.w3.org/2000/svg"><path d="M117.33,120A53.33,53.33,0,1,0,64,66.67,53.33,53.33,0,0,0,117.33,120Zm0-88A34.67,34.67,0,1,1,82.67,66.67,34.67,34.67,0,0,1,117.33,32Zm74.67,88a42.67,42.67,0,1,0-42.67-42.67A42.67,42.67,0,0,0,192,120Zm0-66.67A24,24,0,1,1,168,77.33,24,24,0,0,1,192,53.33ZM217.6,158.4A105.74,105.74,0,0,0,184,141.07a57.88,57.88,0,0,0-58.67-2.4c-1.33.64-2.67,1.44-4,2.24l-4,2.24a57.82,57.82,0,0,0-58.67,2.4,105.74,105.74,0,0,0-33.6,17.33,16,16,0,0,0-5.07,11.87V208a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V170.27A16,16,0,0,0,217.6,158.4ZM32,208V180.27a89.7,89.7,0,0,1,28.8-14.93,42.34,42.34,0,0,1,41.6,1.87,15.82,15.82,0,0,0,18.13-.53l4-2.24c.8-.54,1.6-.94,2.4-1.47a42,42,0,0,1,18.4-4.27,90,90,0,0,1,78.67,21.6A90.22,90.22,0,0,1,224,180.27V208Z"></path></svg>
+        </div>
+        <span class="text-[10px] font-bold tracking-[0.2em] text-zinc-500 group-hover:text-white uppercase transition-colors">Crew</span>
+        <div class="h-1 w-8 bg-transparent mt-1"></div>
+      </a>
+      <a class="flex flex-col items-center gap-1 group" href="#">
+        <div class="text-zinc-500 group-hover:text-white transition-colors">
+          <svg fill="currentColor" height="28" viewBox="0 0 256 256" width="28" xmlns="http://www.w3.org/2000/svg"><path d="M208,80H176V72a48,48,0,0,0-96,0v8H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,72a32,32,0,0,1,64,0v8H96ZM208,208H48V96H208V208Zm-80-56a12,12,0,1,1-12-12A12,12,0,0,1,128,152Z"></path></svg>
+        </div>
+        <span class="text-[10px] font-bold tracking-[0.2em] text-zinc-500 group-hover:text-white uppercase transition-colors">Vault</span>
+        <div class="h-1 w-8 bg-transparent mt-1"></div>
+      </a>
+      <a class="flex flex-col items-center gap-1 group" href="#">
+        <div class="text-zinc-500 group-hover:text-white transition-colors">
+          <svg fill="currentColor" height="28" viewBox="0 0 256 256" width="28" xmlns="http://www.w3.org/2000/svg"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.39a88,88,0,0,1,107.84,0,87.69,87.69,0,0,1-107.84,0ZM216,128a87.41,87.41,0,0,1-23,59.3,103.85,103.85,0,0,0-129.94,0A88,88,0,1,1,216,128Z"></path></svg>
+        </div>
+        <span class="text-[10px] font-bold tracking-[0.2em] text-zinc-500 group-hover:text-white uppercase transition-colors">World</span>
+        <div class="h-1 w-8 bg-transparent mt-1"></div>
+      </a>
+    </nav>
+  </footer>
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-            // Свет
-            const light = new THREE.PointLight(0xff0055, 1, 100);
-            light.position.set(0, 5, 0);
-            scene.add(light);
+    // UI Elements
+    const scoreDisplay = document.getElementById('score-display');
+    const speedDisplay = document.getElementById('speed-display');
 
-            // Создаем начальные платформы
-            for (let i = 0; i < platformCount; i++) {
-                createPlatform(i * -2);
+    // Game variables
+    let score = 0;
+    let speed = 40; // World moves at 40 units/sec
+    let currentLane = 0; // -1, 0, 1
+    const laneWidth = 3;
+    let isJumping = false;
+    let jumpTime = 0;
+    const v0 = 15; // initial jump velocity
+    const g = 40; // gravity
+    let playerY = 0; // jump height
+    let playerX = 0; // horizontal position
+    let targetX = 0;
+    let gameActive = true;
+
+    // Scene setup
+    const container = document.getElementById('game-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0a0a0c, 0.03); // Mask spawn point
+    scene.background = new THREE.Color(0x0a0a0c);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // Deep perspective: camera slightly above and behind player
+    const cameraZ = 5;
+    const playerZ = 3;
+    camera.position.set(0, 3, cameraZ);
+    camera.lookAt(0, 0, -50);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    container.appendChild(renderer.domElement);
+
+    // Post-processing: Blinding neon glow
+    const renderScene = new THREE.RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0;
+    bloomPass.strength = 1.5;
+    bloomPass.radius = 0.5;
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(renderScene);
+    composer.addPass(bloomPass);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    scene.add(ambientLight);
+
+    // Player Avatar (stylized capsule)
+    const playerGeometry = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
+    const playerMaterial = new THREE.MeshStandardMaterial({
+      color: 0x00f3ff,
+      emissive: 0x00f3ff,
+      emissiveIntensity: 0.8,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    const player = new THREE.Mesh(playerGeometry, playerMaterial);
+    player.position.set(0, playerY + 1, playerZ);
+    scene.add(player);
+
+    const playerLight = new THREE.PointLight(0x00f3ff, 2, 8);
+    player.add(playerLight);
+
+    // Central Laser Line (Permanent Emissive Strip)
+    const laserGeometry = new THREE.PlaneGeometry(0.2, 300);
+    const laserMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+    const laserLine = new THREE.Mesh(laserGeometry, laserMaterial);
+    laserLine.rotation.x = -Math.PI / 2;
+    laserLine.position.y = 0.01;
+    laserLine.position.z = -100;
+    scene.add(laserLine);
+
+    const laserGlowGeometry = new THREE.PlaneGeometry(1, 300);
+    const laserGlowMaterial = new THREE.MeshBasicMaterial({ color: 0xff2d78, transparent: true, opacity: 0.5 });
+    const laserGlow = new THREE.Mesh(laserGlowGeometry, laserGlowMaterial);
+    laserGlow.rotation.x = -Math.PI / 2;
+    laserGlow.position.y = 0.005;
+    laserGlow.position.z = -100;
+    scene.add(laserGlow);
+
+    // High-tech Floor Grid
+    const gridHelper = new THREE.GridHelper(300, 150, 0xff2d78, 0x111111);
+    gridHelper.position.y = -0.1;
+    scene.add(gridHelper);
+
+    // Platforms System (Object Pooling)
+    const platformCount = 50;
+    const platforms = [];
+    const platformLength = 4;
+    const spawnDistance = -150;
+    const platformGeometry = new THREE.BoxGeometry(2.6, 0.4, platformLength);
+    const edgesGeometry = new THREE.EdgesGeometry(platformGeometry);
+
+    const baseMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0a0a0c,
+      emissive: 0x000000,
+      roughness: 0.1,
+      metalness: 0.8,
+      transparent: true,
+      opacity: 1
+    });
+
+    for (let i = 0; i < platformCount; i++) {
+      const mat = baseMaterial.clone();
+      const mesh = new THREE.Mesh(platformGeometry, mat);
+
+      const isPink = i % 2 === 0;
+      const lineColor = isPink ? 0xff2d78 : 0x00f3ff;
+      const lineMat = new THREE.LineBasicMaterial({ color: lineColor, transparent: true, opacity: 0.8 });
+      const edges = new THREE.LineSegments(edgesGeometry, lineMat);
+      mesh.add(edges);
+
+      mesh.position.y = -100; // Hidden initially
+      scene.add(mesh);
+      platforms.push({ mesh, edges, active: false, lane: 0, z: 0 });
+    }
+
+    function spawnPlatform(zPos, laneOverride = null) {
+      const p = platforms.find(pl => !pl.active);
+      if (!p) return;
+
+      const laneIndex = laneOverride !== null ? laneOverride : Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+      p.active = true;
+      p.lane = laneIndex;
+      p.z = zPos;
+
+      p.mesh.position.set(laneIndex * laneWidth, -0.2, zPos);
+      p.mesh.scale.set(1, 1, 1);
+      p.mesh.material.opacity = 1;
+      p.edges.material.opacity = 0.8;
+      p.mesh.visible = true;
+    }
+
+    // Initial platform generation
+    for (let z = cameraZ; z > spawnDistance; z -= platformLength) {
+      if (Math.random() > 0.15) { // 15% chance of gap
+        spawnPlatform(z);
+        // Maybe spawn side platforms to fill lanes
+        if (Math.random() > 0.5) spawnPlatform(z, (Math.floor(Math.random() * 3) - 1));
+      }
+    }
+    // Ensure player starts on a solid platform
+    spawnPlatform(playerZ, 0);
+
+    // Controls
+    window.addEventListener('keydown', (e) => {
+      if (!gameActive) return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        currentLane = Math.max(-1, currentLane - 1);
+        targetX = currentLane * laneWidth;
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        currentLane = Math.min(1, currentLane + 1);
+        targetX = currentLane * laneWidth;
+      } else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        if (!isJumping) {
+          isJumping = true;
+          jumpTime = 0;
+        }
+      }
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+
+      if (gameActive) {
+        // UI Sync
+        score += speed * dt * 10;
+        speed += dt * 0.2; // Slowly increase difficulty
+        scoreDisplay.textContent = Math.floor(score).toLocaleString();
+
+        const displaySpeed = Math.floor(speed * 3.6);
+        speedDisplay.textContent = displaySpeed.toString();
+
+        // Player Movement
+        playerX += (targetX - playerX) * 15 * dt;
+
+        if (isJumping) {
+          jumpTime += dt;
+          playerY = v0 * jumpTime - 0.5 * g * jumpTime * jumpTime;
+          if (playerY <= 0) {
+            playerY = 0;
+            isJumping = false;
+          }
+        }
+        player.position.set(playerX, playerY + 1, playerZ);
+
+        // Platform Movement & Disintegration
+        let playerOnPlatform = false;
+
+        // Disintegration: scale down to zero and fade out exactly 2 units before passing the camera
+        // Camera is at z=5. Passing camera is z=5. 2 units before is z=3.
+        // So from z=3 to z=5, scale and opacity go from 1 to 0.
+        const fadeStartZ = cameraZ - 2; // 3
+        const fadeEndZ = cameraZ;       // 5
+
+        for (let p of platforms) {
+          if (!p.active) continue;
+
+          p.z += speed * dt;
+          p.mesh.position.z = p.z;
+
+          if (p.z > fadeStartZ && p.z <= fadeEndZ) {
+            // Lerp scale and opacity
+            const progress = (p.z - fadeStartZ) / (fadeEndZ - fadeStartZ); // 0 to 1
+            const scale = Math.max(0, 1 - progress);
+            p.mesh.scale.set(scale, scale, scale);
+            p.mesh.material.opacity = scale;
+            p.edges.material.opacity = scale * 0.8;
+          } else if (p.z > fadeEndZ) {
+            // Recycle
+            p.active = false;
+            p.mesh.visible = false;
+            p.mesh.position.y = -100;
+          } else {
+            p.mesh.scale.set(1, 1, 1);
+            p.mesh.material.opacity = 1;
+            p.edges.material.opacity = 0.8;
+          }
+
+          // Collision Check
+          if (playerY === 0) {
+            // Platform occupies [p.z - length/2, p.z + length/2]
+            const halfLen = platformLength / 2;
+            if (p.lane === currentLane && p.z - halfLen <= playerZ && p.z + halfLen >= playerZ) {
+              // If it hasn't completely disintegrated yet, we can stand on it
+              if (p.z < fadeEndZ - 0.2) {
+                playerOnPlatform = true;
+              }
             }
-
-            animate();
+          }
         }
 
-        function createPlatform(z) {
-            const geometry = new THREE.BoxGeometry(2.5, 0.2, 1.8);
-            const material = new THREE.MeshBasicMaterial({
-                color: Math.random() > 0.3 ? 0x00ffff : 0xff0055,
-                wireframe: false,
-                transparent: true,
-                opacity: 0.8
-            });
-            const platform = new THREE.Mesh(geometry, material);
-
-            // Расставляем по 3 линиям (как в Subway Surfers)
-            const lanes = [-3, 0, 3];
-            platform.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0, z);
-
-            // Добавляем неоновую рамку
-            const edges = new THREE.EdgesGeometry(geometry);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff }));
-            platform.add(line);
-
-            scene.add(platform);
-            platforms.push(platform);
+        // Falling / Game Over
+        if (playerY === 0 && !playerOnPlatform) {
+          player.position.y -= speed * dt; // Fall visually
+          if (player.position.y < -5) {
+            gameActive = false;
+            // Reset sequence
+            setTimeout(() => {
+              score = 0;
+              speed = 40;
+              currentLane = 0;
+              targetX = 0;
+              playerX = 0;
+              playerY = 0;
+              gameActive = true;
+              platforms.forEach(p => { p.active = false; p.mesh.visible = false; });
+              for (let z = cameraZ; z > spawnDistance; z -= platformLength) {
+                if (Math.random() > 0.15) spawnPlatform(z);
+              }
+              spawnPlatform(playerZ, 0); // ensure start platform
+            }, 800);
+          }
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-
-            platforms.forEach((p, index) => {
-                p.position.z += speed;
-
-                // Эффект исчезновения при приближении к игроку (z > 2)
-                if (p.position.z > -2) {
-                    p.material.opacity -= 0.05;
-                    p.scale.y -= 0.05;
-                }
-
-                // Респаун платформы вдали
-                if (p.position.z > 5) {
-                    p.position.z = -platformCount * 1.5;
-                    p.position.x = [-3, 0, 3][Math.floor(Math.random() * 3)];
-                    p.material.opacity = 0.8;
-                    p.scale.y = 1;
-                }
-            });
-
-            // Легкое покачивание камеры для динамики
-            camera.position.y = 2 + Math.sin(Date.now() * 0.005) * 0.05;
-
-            renderer.render(scene, camera);
+        // Spawn new rows in the distance
+        let minZ = 100;
+        platforms.forEach(p => { if (p.active && p.z < minZ) minZ = p.z; });
+        if (minZ > spawnDistance + platformLength) {
+          const spawnZ = minZ - platformLength;
+          let spawned = false;
+          // Spawn across lanes, leaving gaps
+          for (let l = -1; l <= 1; l++) {
+            if (Math.random() > 0.3) {
+              spawnPlatform(spawnZ, l);
+              spawned = true;
+            }
+          }
+          // Ensure at least one platform occasionally to avoid impossible jumps,
+          // though with multi-lanes jumps aren't always necessary
+          if (!spawned && Math.random() > 0.5) spawnPlatform(spawnZ, Math.floor(Math.random() * 3) - 1);
         }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // Move grid floor for infinite effect
+        gridHelper.position.z += speed * dt;
+        if (gridHelper.position.z > 10) gridHelper.position.z -= 10;
+      }
 
-        init();
-    </script>
+      composer.render();
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start
+    animate();
+  </script>
 </body>
-
 </html>
