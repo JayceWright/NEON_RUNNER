@@ -1,0 +1,18 @@
+# System & Editor files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Scrap files (test drafts)
+.html
+a.html
+file.html
+
+# Backups & Duplicates
+* (1).glb
+* (2).glb
+Archieve/
+
+# Logs
+*.log
