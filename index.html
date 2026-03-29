@@ -60,6 +60,8 @@
     }
     #game-over-screen { display: none; }
     #start-screen { display: flex; }
+    /* Prevent default touch actions like pull-to-refresh */
+    canvas { touch-action: none; }
   </style>
 </head>
 
@@ -193,6 +195,11 @@
     const MAGENTA = 0xff0055;
     const CYAN    = 0x00f3ff;
 
+    // Mobile Controls
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const swipeThreshold = 30; // pixels
+
     // FOR TESTING: Immortal mode (will not trigger game over)
     window.GOD_MODE = false;
 
@@ -266,6 +273,59 @@
 
       window.addEventListener('keydown', onKey);
       window.addEventListener('resize', onResize);
+      
+      // Mobile touch listeners
+      window.addEventListener('touchstart', handleTouchStart, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
+    // ─── TOUCH HANDLERS ───────────────────────────────────────────────────────────
+    function handleTouchStart(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+
+    function handleTouchEnd(e) {
+      if (!isRunning || isPaused) return;
+      
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+      
+      // Check if it's a swipe or a tap
+      if (Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
+        // Swipe detected
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal swipe
+          if (dx > swipeThreshold && playerLane < 1) playerLane++;
+          else if (dx < -swipeThreshold && playerLane > -1) playerLane--;
+        } else {
+          // Vertical swipe
+          if (dy < -swipeThreshold && !isJumping) triggerJump();
+        }
+      } else {
+        // Tap detected -> Jump
+        if (!isJumping) triggerJump();
+      }
+    }
+
+    function triggerJump() {
+      if (isJumping) return;
+      velocityY = jumpForce;
+      isJumping = true;
+      if (window.jumpFlash) window.jumpFlash();
+      if (jumpAction && runAction) {
+         runAction.fadeOut(0.1);
+         jumpAction.reset().fadeIn(0.1).play();
+         setTimeout(function() {
+           if (isJumping) {
+             jumpAction.fadeOut(0.15);
+             runAction.reset().fadeIn(0.15).play();
+           }
+         }, 250);
+      }
     }
 
     // ─── MODEL LOADING ────────────────────────────────────────────────────────────
@@ -657,6 +717,7 @@
     // ─── DEATH ───────────────────────────────────────────────────────────────────
     function triggerDeath() {
       isRunning = false;
+
       const iv = setInterval(() => {
         player.position.y -= 1.5;
         renderer.render(scene, camera);
