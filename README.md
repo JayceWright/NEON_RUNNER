@@ -21,6 +21,8 @@ Here's a glimpse of the action:
 | **Pause Screen** | **Game Over** | |
 | ![Pause Screen](./screenshots/pause.png) | ![Game Over](./screenshots/game-over.png) | |
 
+## 🚀 How to Run https://jaycewright.github.io/NEON_RUNNER/
+
 ## 🚀 How to Run Locally
 
 You don't need any complex build steps to play the game locally. It's just a static HTML file!
