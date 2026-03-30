@@ -196,9 +196,11 @@
     const CYAN    = 0x00f3ff;
 
     // Mobile Controls
+    // Mobile Controls
     let touchStartX = 0;
     let touchStartY = 0;
-    const swipeThreshold = 30; // pixels
+    let touchActive = false; // To prevent multiple swipes per touch
+    const swipeThreshold = 25; // Lower threshold for faster response
 
     // FOR TESTING: Immortal mode (will not trigger game over)
     window.GOD_MODE = false;
@@ -210,9 +212,10 @@
 
       camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 1000);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      // Antialias off + capped pixel ratio for performance
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
       renderer.setSize(innerWidth, innerHeight);
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
       container.appendChild(renderer.domElement);
 
       // Pure ambient — the character's own point light does the work
@@ -274,41 +277,50 @@
       window.addEventListener('keydown', onKey);
       window.addEventListener('resize', onResize);
       
-      // Mobile touch listeners
+      // Mobile touch listeners - moved to move for instant reaction
       window.addEventListener('touchstart', handleTouchStart, { passive: false });
-      window.addEventListener('touchend', handleTouchEnd, { passive: false });
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', () => { touchActive = false; }, { passive: false });
     }
 
     // ─── TOUCH HANDLERS ───────────────────────────────────────────────────────────
     function handleTouchStart(e) {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
+      touchActive = true;
+    }
+
+    function handleTouchMove(e) {
+      if (!isRunning || isPaused || !touchActive) return;
+      
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      
+      if (Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal swipe
+          if (dx > swipeThreshold && playerLane < 1) {
+            playerLane++;
+            touchActive = false; // Swipe consumed
+          } else if (dx < -swipeThreshold && playerLane > -1) {
+            playerLane--;
+            touchActive = false; // Swipe consumed
+          }
+        } else {
+          // Vertical swipe
+          if (dy < -swipeThreshold && !isJumping) {
+            triggerJump();
+            touchActive = false; // Swipe consumed
+          }
+        }
+      }
+      
+      // Prevent scrolling while playing
+      if (e.cancelable) e.preventDefault();
     }
 
     function handleTouchEnd(e) {
-      if (!isRunning || isPaused) return;
-      
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
-      
-      const dx = touchEndX - touchStartX;
-      const dy = touchEndY - touchStartY;
-      
-      // Check if it's a swipe or a tap
-      if (Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
-        // Swipe detected
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // Horizontal swipe
-          if (dx > swipeThreshold && playerLane < 1) playerLane++;
-          else if (dx < -swipeThreshold && playerLane > -1) playerLane--;
-        } else {
-          // Vertical swipe
-          if (dy < -swipeThreshold && !isJumping) triggerJump();
-        }
-      } else {
-        // Tap detected -> Jump
-        if (!isJumping) triggerJump();
-      }
+      touchActive = false;
     }
 
     function triggerJump() {
@@ -464,17 +476,13 @@
         const geo = new THREE.BoxGeometry(laneWidth - 0.2, 0.5, platformDepth);
         const edgeColor = Math.random() > 0.5 ? MAGENTA : CYAN;
 
-        // Make the platforms look like dense, slightly glowing obsidian/glass
-        const mat = new THREE.MeshPhysicalMaterial({
-          color: 0x111122,  // Slightly brighter dark blue base
+        // Optimized material for performance
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0x050510,
           emissive: edgeColor,
-          emissiveIntensity: 0.35,  // Much stronger glow so they are extremely visible
-          roughness: 0.1,
-          metalness: 0.8,
-          clearcoat: 1.0,
-          clearcoatRoughness: 0.1,
-          transparent: true, 
-          opacity: 0.95
+          emissiveIntensity: 0.4,
+          roughness: 0.5,
+          metalness: 0.5
         });
 
         const mesh = new THREE.Mesh(geo, mat);
