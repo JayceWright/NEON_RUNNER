@@ -240,7 +240,6 @@
       sharedMatCyan    = new THREE.MeshPhysicalMaterial({ ...matConfig, emissive: CYAN    });
       
       buildingGeo = new THREE.BoxGeometry(1, 1, 1); // We'll scale it instead of creating new geo
-...
 
       // Pure ambient — the character's own point light does the work
       scene.add(new THREE.AmbientLight(0xddeeff, 1.2));
