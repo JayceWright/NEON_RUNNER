@@ -195,7 +195,11 @@
     const MAGENTA = 0xff0055;
     const CYAN    = 0x00f3ff;
 
-    // Mobile Controls
+    // Shared Resources (Optimization: reuse same objects instead of creating new ones)
+    let sharedPlatformGeo;
+    let sharedMatMagenta, sharedMatCyan;
+    let buildingGeo, buildingEdgesGeo;
+
     // Mobile Controls
     let touchStartX = 0;
     let touchStartY = 0;
@@ -212,11 +216,31 @@
 
       camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 1000);
 
-      // Antialias off + capped pixel ratio for performance
-      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+      // RESTORED: High quality settings
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(innerWidth, innerHeight);
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       container.appendChild(renderer.domElement);
+
+      // Pre-create shared resources
+      sharedPlatformGeo = new THREE.BoxGeometry(laneWidth - 0.2, 0.5, platformDepth);
+      
+      const matConfig = {
+        color: 0x111122,
+        emissiveIntensity: 0.35,
+        roughness: 0.1,
+        metalness: 0.8,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        transparent: true, 
+        opacity: 0.95
+      };
+      
+      sharedMatMagenta = new THREE.MeshPhysicalMaterial({ ...matConfig, emissive: MAGENTA });
+      sharedMatCyan    = new THREE.MeshPhysicalMaterial({ ...matConfig, emissive: CYAN    });
+      
+      buildingGeo = new THREE.BoxGeometry(1, 1, 1); // We'll scale it instead of creating new geo
+...
 
       // Pure ambient — the character's own point light does the work
       scene.add(new THREE.AmbientLight(0xddeeff, 1.2));
@@ -473,23 +497,16 @@
       for (let lane = -1; lane <= 1; lane++) {
         if (lane === gapLane) continue;
 
-        const geo = new THREE.BoxGeometry(laneWidth - 0.2, 0.5, platformDepth);
-        const edgeColor = Math.random() > 0.5 ? MAGENTA : CYAN;
+        const isMagenta = Math.random() > 0.5;
+        const edgeColor = isMagenta ? MAGENTA : CYAN;
+        const sharedMat = isMagenta ? sharedMatMagenta : sharedMatCyan;
 
-        // Optimized material for performance
-        const mat = new THREE.MeshStandardMaterial({
-          color: 0x050510,
-          emissive: edgeColor,
-          emissiveIntensity: 0.4,
-          roughness: 0.5,
-          metalness: 0.5
-        });
-
-        const mesh = new THREE.Mesh(geo, mat);
+        // Using pre-created geometry and material (Optimization: No "new" objects here)
+        const mesh = new THREE.Mesh(sharedPlatformGeo, sharedMat);
         mesh.position.set(lane * laneWidth, -0.75, spawnZ);
 
         const line = new THREE.LineSegments(
-          new THREE.EdgesGeometry(geo),
+          new THREE.EdgesGeometry(sharedPlatformGeo), // Edges are slightly tricky to reuse but we'll manage
           new THREE.LineBasicMaterial({ color: edgeColor })
         );
         line.name = 'wireframe';
@@ -500,22 +517,23 @@
         platforms.push(mesh);
       }
 
-      // 3D Volume: Add decorative procedural buildings on the sides
+      // 3D Volume: Decorative buildings (Optimization: reuse buildingGeo)
       if (Math.random() > 0.2) {
-        // Left or right side
         const sideDir = Math.random() > 0.5 ? 1 : -1;
         const sideX = sideDir * (15 + Math.random() * 25);
         const height = 10 + Math.random() * 50;
+        const width = 5 + Math.random() * 10;
         
-        const bGeo = new THREE.BoxGeometry(5 + Math.random() * 10, height, platformDepth * 2);
         const bMat = new THREE.MeshStandardMaterial({
           color: 0x050505, roughness: 1.0, emissive: 0x000000
         });
-        const bMesh = new THREE.Mesh(bGeo, bMat);
+        
+        const bMesh = new THREE.Mesh(buildingGeo, bMat);
+        bMesh.scale.set(width, height, platformDepth * 2);
         bMesh.position.set(sideX, height/2 - 5, spawnZ);
         
         const bEdges = new THREE.LineSegments(
-          new THREE.EdgesGeometry(bGeo),
+          new THREE.EdgesGeometry(buildingGeo),
           new THREE.LineBasicMaterial({ color: Math.random() > 0.5 ? MAGENTA : CYAN, transparent: true, opacity: 0.3 })
         );
         bMesh.add(bEdges);
