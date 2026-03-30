@@ -556,6 +556,17 @@
       spawnZ = 4;
       player.position.set(0, 0, 0);
       player.rotation.set(0, 0, 0);
+      player.scale.set(1, 1, 1);
+      
+      // Restore baseline grey emissive glow
+      if (charModel) {
+        charModel.traverse(function(child) {
+          if (child.isMesh && child.material && child.material.emissive !== undefined) {
+             child.material.emissive.set(0x333333);
+             child.material.emissiveIntensity = 0.8;
+          }
+        });
+      }
 
       scoreUI.innerText = '0';
       speedUI.innerText = '140';
@@ -709,8 +720,7 @@
         }
 
         if (p.userData.isFalling && !p.userData.isBuilding) {
-          p.position.y -= 15 * safeDt;
-          p.material.opacity -= 3 * safeDt;
+          p.position.y -= 25 * safeDt; // Fall faster since we no longer fade out
           const wire = p.children.find(c => c.name === 'wireframe');
           if (wire) wire.material.color.setHex(0xffffff);
         }
@@ -742,11 +752,33 @@
     // ─── DEATH ───────────────────────────────────────────────────────────────────
     function triggerDeath() {
       isRunning = false;
+      
+      // Flash red on death
+      if (charModel) {
+        charModel.traverse(function(child) {
+          if (child.isMesh && child.material && child.material.emissive !== undefined) {
+             child.material.emissive.set(0xff0000); // Red error flash
+             child.material.emissiveIntensity = 4.0;
+          }
+        });
+      }
 
+      let dropSpeed = 0.5;
       const iv = setInterval(() => {
-        player.position.y -= 1.5;
+        dropSpeed += 0.2; // Accelerate fall
+        player.position.y -= dropSpeed;
+        
+        // Spin chaotically
+        player.rotation.x += 0.15;
+        player.rotation.y += 0.3;
+        player.rotation.z += 0.2;
+        
+        // Shrink like being sucked into a black hole
+        player.scale.multiplyScalar(0.92);
+
         renderer.render(scene, camera);
-        if (player.position.y < -20) {
+        
+        if (player.position.y < -40 || player.scale.x < 0.01) {
           clearInterval(iv);
           showGameOver();
         }
