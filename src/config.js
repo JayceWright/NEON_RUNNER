@@ -65,13 +65,13 @@ export const CONFIG = {
   },
 
   ASSETS: {
-    MODEL_PATH: '/assets/models/tripo_rigging_df631e0e-4b3e-484b-8408-c58b35caa963_meshopt.glb',
+    MODEL_PATH: 'assets/models/tripo_rigging_df631e0e-4b3e-484b-8408-c58b35caa963_meshopt.glb',
     RETARGET_FILES: [
-      '/assets/models/tripo_retarget_d92c8157-c67a-416f-90e5-5a791d58aa2c.glb',
-      '/assets/models/tripo_retarget_b420ba5a-af77-45a8-a029-3e35c73d054e.glb',
-      '/assets/models/tripo_retarget_bb9b64f8-3b22-447a-978c-0155ff61b026.glb',
-      '/assets/models/tripo_retarget_9c2b3a83-75d2-4a81-8427-b3c33f275094.glb',
-      '/assets/models/tripo_retarget_03ecbc1e-6142-4ecb-8326-81bf2c940550.glb',
+      'assets/models/tripo_retarget_d92c8157-c67a-416f-90e5-5a791d58aa2c.glb',
+      'assets/models/tripo_retarget_b420ba5a-af77-45a8-a029-3e35c73d054e.glb',
+      'assets/models/tripo_retarget_bb9b64f8-3b22-447a-978c-0155ff61b026.glb',
+      'assets/models/tripo_retarget_9c2b3a83-75d2-4a81-8427-b3c33f275094.glb',
+      'assets/models/tripo_retarget_03ecbc1e-6142-4ecb-8326-81bf2c940550.glb',
     ],
   },
 

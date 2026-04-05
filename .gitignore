@@ -22,3 +22,4 @@ stitch_preview.html
 # Node
 node_modules/
 dist/
+DEPLOY_GUIDE.md
