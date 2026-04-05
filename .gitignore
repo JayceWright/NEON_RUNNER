@@ -18,3 +18,7 @@ Archieve/
 *.log
 stitch_preview.html
 .gemini/settings.json
+
+# Node
+node_modules/
+dist/

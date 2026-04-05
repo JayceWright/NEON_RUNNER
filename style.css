@@ -1,0 +1,42 @@
+/* NEON_RUNNER — Custom Styles */
+
+body {
+  font-family: 'Sora', sans-serif;
+  background-color: #000;
+  color: #ffffff;
+  margin: 0;
+  overflow: hidden;
+}
+
+.text-glow-pink {
+  text-shadow: 0 0 8px #ff2d78, 0 0 12px #ff2d78;
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 8px #00f3ff;
+}
+
+.hud-glass {
+  background: rgba(10, 10, 12, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 45, 120, 0.3);
+}
+
+.hud-glass-cyan {
+  background: rgba(10, 10, 12, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 243, 255, 0.3);
+}
+
+#game-over-screen {
+  display: none;
+}
+
+#start-screen {
+  display: flex;
+}
+
+/* Prevent default touch actions like pull-to-refresh */
+canvas {
+  touch-action: none;
+}
