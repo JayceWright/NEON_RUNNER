@@ -1,19 +1,28 @@
 /**
  * PlatformManager — Platform generation, falling, ground-checking, cleanup.
- * Uses global THREE from CDN r128.
  */
+import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 
-const THREE = window.THREE;
-
 export class PlatformManager {
+  /**
+   * @param {THREE.Scene} scene
+   * @param {import('./SharedResources.js').SharedResources} resources
+   */
   constructor(scene, resources) {
     this.scene = scene;
     this.resources = resources;
+
+    /** @type {THREE.Mesh[]} */
     this.platforms = [];
     this.spawnZ = 4;
   }
 
+  /**
+   * Create a row of platforms (up to 3 lanes) + optional building.
+   * @param {boolean} forceNoHole — if true, no holes in this row.
+   * @param {number} playerSpeed — current speed for hole probability.
+   */
   createRow(forceNoHole, playerSpeed = 20) {
     const w = CONFIG.WORLD;
     const holeChance = forceNoHole ? -1 : w.HOLE_BASE_CHANCE + (playerSpeed / w.HOLE_SPEED_FACTOR);
@@ -41,10 +50,13 @@ export class PlatformManager {
       this.platforms.push(mesh);
     }
 
+    // Decorative buildings
     this._spawnBuilding();
+
     this.spawnZ -= w.PLATFORM_DEPTH;
   }
 
+  /** @private */
   _spawnBuilding() {
     const b = CONFIG.BUILDING;
     if (Math.random() > CONFIG.WORLD.BUILDING_SPAWN_CHANCE) return;
@@ -82,7 +94,16 @@ export class PlatformManager {
     this.platforms.push(bMesh);
   }
 
+  /**
+   * Update platforms each frame: trigger falling, cleanup, spawn new rows.
+   * @param {number} dt
+   * @param {number} playerZ
+   * @param {number} targetX — player's target X position
+   * @param {number} playerY — player's Y position
+   * @param {number} playerSpeed
+   */
   update(dt, playerZ, targetX, playerY, playerSpeed) {
+    // Spawn new rows ahead
     if (playerZ - CONFIG.WORLD.SPAWN_BUFFER < this.spawnZ) {
       this.createRow(false, playerSpeed);
     }
@@ -90,6 +111,7 @@ export class PlatformManager {
     for (let i = this.platforms.length - 1; i >= 0; i--) {
       const p = this.platforms[i];
 
+      // Trigger fall for passed platforms
       if (
         !p.userData.isBuilding &&
         (p.position.z > playerZ + 1 ||
@@ -100,12 +122,14 @@ export class PlatformManager {
         p.userData.isFalling = true;
       }
 
+      // Animate falling
       if (p.userData.isFalling && !p.userData.isBuilding) {
         p.position.y -= CONFIG.WORLD.FALL_SPEED * dt;
         const wire = p.children.find((c) => c.name === 'wireframe');
         if (wire) wire.material.color.setHex(0xffffff);
       }
 
+      // Cleanup
       if (p.position.y < -15 || p.position.z > playerZ + CONFIG.WORLD.CLEANUP_BEHIND) {
         this.scene.remove(p);
         this.platforms.splice(i, 1);
@@ -113,8 +137,15 @@ export class PlatformManager {
     }
   }
 
+  /**
+   * Check if the player is standing on a valid platform.
+   * @param {number} targetX
+   * @param {number} playerZ
+   * @param {boolean} isJumping
+   * @returns {boolean}
+   */
   checkGround(targetX, playerZ, isJumping) {
-    if (isJumping) return true;
+    if (isJumping) return true; // Air = safe
 
     for (const p of this.platforms) {
       if (
@@ -128,18 +159,22 @@ export class PlatformManager {
     return false;
   }
 
+  /** Reset all platforms for new game. */
   reset(playerSpeed) {
+    // Remove all existing
     for (const p of this.platforms) {
       this.scene.remove(p);
     }
     this.platforms = [];
     this.spawnZ = 4;
 
+    // Generate initial rows
     for (let i = 0; i < CONFIG.WORLD.INITIAL_PLATFORMS; i++) {
       this.createRow(i < CONFIG.WORLD.SAFE_PLATFORMS, playerSpeed);
     }
   }
 
+  /** @private */
   get _zMargin() {
     return CONFIG.WORLD.PLATFORM_DEPTH / 2 + 0.5;
   }

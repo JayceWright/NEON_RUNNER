@@ -1,21 +1,21 @@
 /**
  * SharedResources — Pre-created geometries and materials for performance.
- * Uses global THREE from CDN r128.
  */
+import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-
-const THREE = window.THREE;
 
 export class SharedResources {
   constructor() {
     const pm = CONFIG.PLATFORM_MATERIAL;
 
+    // Platform geometry (reused for all platforms)
     this.platformGeo = new THREE.BoxGeometry(
       CONFIG.PLAYER.LANE_WIDTH - 0.2,
       0.5,
       CONFIG.WORLD.PLATFORM_DEPTH
     );
 
+    // Shared platform materials
     const matConfig = {
       color: pm.COLOR,
       emissiveIntensity: pm.EMISSIVE_INTENSITY,
@@ -37,9 +37,11 @@ export class SharedResources {
       emissive: CONFIG.COLORS.CYAN,
     });
 
+    // Building geometry (scaled per-instance)
     this.buildingGeo = new THREE.BoxGeometry(1, 1, 1);
   }
 
+  /** Cleanup. */
   dispose() {
     this.platformGeo.dispose();
     this.matMagenta.dispose();

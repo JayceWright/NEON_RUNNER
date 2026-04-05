@@ -78,11 +78,13 @@ export const CONFIG = {
   LIGHTING: {
     AMBIENT_COLOR: 0xddeeff,
     AMBIENT_INTENSITY: 1.2,
+    // r170 uses physically-correct lights (candela). Old r128 used arbitrary units.
+    // Multiply by ~20x to get comparable brightness.
     CHAR_GLOW_COLOR: 0xaaccff,
-    CHAR_GLOW_INTENSITY: 5.0,
+    CHAR_GLOW_INTENSITY: 100,
     CHAR_GLOW_DISTANCE: 18,
     HEAD_GLOW_COLOR: 0xffffff,
-    HEAD_GLOW_INTENSITY: 2.0,
+    HEAD_GLOW_INTENSITY: 40,
     HEAD_GLOW_DISTANCE: 8,
   },
 
