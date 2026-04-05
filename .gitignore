@@ -16,3 +16,5 @@ Archieve/
 
 # Logs
 *.log
+stitch_preview.html
+.gemini/settings.json

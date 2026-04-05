@@ -85,19 +85,23 @@
     </header>
 
     <!-- Score HUD -->
-    <div class="absolute top-8 left-1/2 -translate-x-1/2 w-full max-w-md">
-      <div class="hud-glass rounded-lg p-4 text-center border-t-2 border-neonPink shadow-neon-pink">
-        <div class="inline-block px-3 py-1 border border-neonPink rounded text-[10px] font-bold text-neonPink mb-3 tracking-widest">SYSTEM ACTIVE</div>
-        <div class="flex justify-between items-end gap-8">
-          <div class="text-left">
-            <p class="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">High Score</p>
-            <p class="text-xl font-bold" id="high-score">0</p>
-          </div>
-          <div class="text-right">
-            <p class="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider">Distance</p>
-            <p class="text-4xl font-black text-neonPink text-glow-pink" id="current-score">0</p>
-          </div>
-        </div>
+    <div class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-12 bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-neonPink/30 shadow-none">
+      <!-- High Score -->
+      <div class="text-center">
+        <p class="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mb-1 mt-1">High Score</p>
+        <p class="text-xl font-bold text-zinc-300 leading-none" id="high-score">0</p>
+      </div>
+
+      <!-- Distance -->
+      <div class="text-center border-x border-neonPink/20 px-12">
+        <p class="text-[10px] text-neonPink font-semibold uppercase tracking-widest mb-1 mt-1">Distance</p>
+        <p class="text-4xl font-black text-white leading-none" id="current-score">0</p>
+      </div>
+
+      <!-- System Status Minimal -->
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-neonPink shadow-neon-pink animate-pulse"></div>
+        <span class="text-[10px] font-bold text-zinc-400 tracking-widest">SYSTEM ACTIVE</span>
       </div>
     </div>
 
@@ -185,6 +189,7 @@
     // Physics
     let velocityY = 0;
     let isJumping = false;
+    let jumpBufferTime = 0; // To allow jumping RIGHT after landing
     const gravity   = -70;
     const jumpForce = 22;
 
@@ -586,6 +591,23 @@
     }
     window.startGame = () => initGame();
 
+    function executeJump() {
+      velocityY = jumpForce;
+      isJumping = true;
+      jumpBufferTime = 0; // Consume the buffer
+      if (window.jumpFlash) window.jumpFlash();
+      if (jumpAction && runAction) {
+         runAction.fadeOut(0.1);
+         jumpAction.reset().fadeIn(0.1).play();
+         setTimeout(function() {
+           if (isJumping) {
+             jumpAction.fadeOut(0.15);
+             runAction.reset().fadeIn(0.15).play();
+           }
+         }, 250);
+      }
+    }
+
     // ─── INPUT ────────────────────────────────────────────────────────────────────
     function onKey(e) {
       // Pause toggle
@@ -609,21 +631,12 @@
       }
       if (e.code === 'ArrowLeft' || e.code === 'KeyA')  { if (playerLane > -1) playerLane--; }
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') { if (playerLane < 1) playerLane++; }
-      else if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !isJumping) {
-        velocityY = jumpForce;
-        isJumping = true;
-        // Flash the model white at the moment of jump
-        if (window.jumpFlash) window.jumpFlash();
-        // Quick flash of jump animation, then auto-return to run
-        if (jumpAction && runAction) {
-           runAction.fadeOut(0.1);
-           jumpAction.reset().fadeIn(0.1).play();
-           setTimeout(function() {
-             if (isJumping) {
-               jumpAction.fadeOut(0.15);
-               runAction.reset().fadeIn(0.15).play();
-             }
-           }, 250);
+      else if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW')) {
+        if (!isJumping) {
+          executeJump();
+        } else {
+          // If already in the air, queue the jump input (jump buffering) for when we land!
+          jumpBufferTime = performance.now();
         }
       }
     }
@@ -670,10 +683,16 @@
           player.position.y = 0;
           isJumping = false;
           velocityY = 0;
-          // Return heavily back to run animation when landed
-          if (jumpAction && runAction) {
-             runAction.reset().fadeIn(0.2).play();
-             jumpAction.fadeOut(0.2);
+          
+          // Check for buffered jump (did they press jump just before landing?)
+          if (performance.now() - jumpBufferTime < 250) { 
+            executeJump();
+          } else {
+            // Return heavily back to run animation when landed normally
+            if (jumpAction && runAction) {
+               runAction.reset().fadeIn(0.2).play();
+               jumpAction.fadeOut(0.2);
+            }
           }
         }
       }
