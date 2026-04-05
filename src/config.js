@@ -77,14 +77,14 @@ export const CONFIG = {
 
   LIGHTING: {
     AMBIENT_COLOR: 0xddeeff,
-    AMBIENT_INTENSITY: 2.2,
+    AMBIENT_INTENSITY: 1.2,
     // r170 uses physically-correct lights (candela). Old r128 used arbitrary units.
     // Multiply by ~20x to get comparable brightness.
     CHAR_GLOW_COLOR: 0xaaccff,
-    CHAR_GLOW_INTENSITY: 20,
+    CHAR_GLOW_INTENSITY: 100,
     CHAR_GLOW_DISTANCE: 18,
     HEAD_GLOW_COLOR: 0xffffff,
-    HEAD_GLOW_INTENSITY: 8,
+    HEAD_GLOW_INTENSITY: 40,
     HEAD_GLOW_DISTANCE: 8,
   },
 
@@ -109,7 +109,7 @@ export const CONFIG = {
     LAND_CROSSFADE_OUT: 0.2,
     RUN_CROSSFADE_IN: 0.1,
     EMISSIVE_BASELINE: 0x333333,
-    EMISSIVE_BASELINE_INTENSITY: 1.0,
+    EMISSIVE_BASELINE_INTENSITY: 0.8,
     FLASH_COLOR: 0xffffff,
     FLASH_INTENSITY: 1.5,
     FLASH_DURATION: 200,
@@ -134,7 +134,7 @@ export const CONFIG = {
 
   PLATFORM_MATERIAL: {
     COLOR: 0x111122,
-    EMISSIVE_INTENSITY: 0.25,
+    EMISSIVE_INTENSITY: 0.35,
     ROUGHNESS: 0.1,
     METALNESS: 0.8,
     CLEARCOAT: 1.0,
