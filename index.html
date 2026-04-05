@@ -67,15 +67,15 @@
     <div
       class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-12 bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-neonPink/30 shadow-none">
       <!-- High Score -->
-      <div class="text-center">
+      <div class="text-center min-w-[100px]">
         <p class="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mb-1 mt-1">High Score</p>
-        <p class="text-xl font-bold text-zinc-300 leading-none" id="high-score">0</p>
+        <p class="text-xl font-bold text-zinc-300 leading-none tabular-nums" id="high-score">0</p>
       </div>
 
       <!-- Distance -->
-      <div class="text-center border-x border-neonPink/20 px-12">
+      <div class="text-center border-x border-neonPink/20 px-4 min-w-[180px]">
         <p class="text-[10px] text-neonPink font-semibold uppercase tracking-widest mb-1 mt-1">Distance</p>
-        <p class="text-4xl font-black text-white leading-none" id="current-score">0</p>
+        <p class="text-4xl font-black text-white leading-none tabular-nums" id="current-score">0</p>
       </div>
 
       <!-- System Status Minimal -->
@@ -90,7 +90,7 @@
       <div class="hud-glass-cyan p-4 rounded-lg border-l-4 border-l-neonCyan w-40">
         <p class="text-[10px] text-neonCyan font-bold uppercase tracking-widest mb-1">Current Speed</p>
         <div class="flex items-baseline gap-1">
-          <span class="text-3xl font-black text-white" id="speed-display">0</span>
+          <span class="text-3xl font-black text-white tabular-nums min-w-[60px] text-right" id="speed-display">0</span>
           <span class="text-xs font-bold text-zinc-400 uppercase">km/h</span>
         </div>
       </div>
