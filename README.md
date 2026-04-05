@@ -1,6 +1,8 @@
 # Neon Runner 🏃‍♂️💨
 
-An endless runner game built with HTML, Tailwind CSS, and Three.js! Dodge the gaps, jump over obstacles, and see how far you can run in this neon-infused cyber world! 🌆✨
+An endless 3D runner game built with HTML, Tailwind CSS, and Three.js! Dodge the gaps, jump over obstacles, and see how far you can run in this neon-infused cyber world! 🌆✨
+
+The game features modular JavaScript architecture, optimized 3D models using Meshopt Decoder, and a modern build pipeline via Vite.
 
 ## 🎮 How to Play
 
@@ -23,7 +25,12 @@ Here's a glimpse of the action:
 
 ## 🚀 Live Demo
 
-Play the game here: [https://jaycewright.github.io/NEON_RUNNER/](https://jaycewright.github.io/NEON_RUNNER/)
+Play the latest stable version of the game here (deployed via the `gh-pages` branch):
+[https://jaycewright.github.io/NEON_RUNNER/](https://jaycewright.github.io/NEON_RUNNER/)
+
+### Experimental r170 Version
+We also have an updated version running on a newer build of Three.js (r170). Check it out here:
+[https://jaycewright.github.io/NEON_RUNNER/r170/](https://jaycewright.github.io/NEON_RUNNER/r170/)
 
 ## 🚀 How to Run Locally
 
