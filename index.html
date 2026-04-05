@@ -627,8 +627,16 @@
 
       if (!isRunning || isPaused) {
         if ((e.code === 'Space' || e.code === 'Enter') && startScreen.style.display !== 'none') startGame();
+        if ((e.code === 'KeyR' || e.code === 'Space' || e.code === 'Enter') && gameOverScreen.style.display !== 'none') startGame();
         return;
       }
+
+      // Quick restart
+      if (e.code === 'KeyR') {
+        startGame();
+        return;
+      }
+
       if (e.code === 'ArrowLeft' || e.code === 'KeyA')  { if (playerLane > -1) playerLane--; }
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') { if (playerLane < 1) playerLane++; }
       else if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW')) {
@@ -676,6 +684,7 @@
       player.position.x += (targetX - player.position.x) * 15 * safeDt;
 
       // Jump physics
+      let justLanded = false;
       if (isJumping) {
         player.position.y += velocityY * safeDt;
         velocityY += gravity * safeDt;
@@ -683,17 +692,7 @@
           player.position.y = 0;
           isJumping = false;
           velocityY = 0;
-          
-          // Check for buffered jump (did they press jump just before landing?)
-          if (performance.now() - jumpBufferTime < 250) { 
-            executeJump();
-          } else {
-            // Return heavily back to run animation when landed normally
-            if (jumpAction && runAction) {
-               runAction.reset().fadeIn(0.2).play();
-               jumpAction.fadeOut(0.2);
-            }
-          }
+          justLanded = true;
         }
       }
 
@@ -763,6 +762,17 @@
         if (!window.GOD_MODE) {
            triggerDeath();
         }
+      } else if (justLanded && standValid) {
+         // Process jump buffer or landing animation ONLY if player landed safely
+         if (performance.now() - jumpBufferTime < 250) { 
+           executeJump();
+         } else {
+           // Return heavily back to run animation when landed normally
+           if (jumpAction && runAction) {
+              runAction.reset().fadeIn(0.2).play();
+              jumpAction.fadeOut(0.2);
+           }
+         }
       }
 
       renderer.render(scene, camera);
